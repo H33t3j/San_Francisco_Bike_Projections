@@ -1,0 +1,89 @@
+```{r}
+bike_data <- read.csv("hour.csv")
+str(bike_data)
+summary(bike_data)
+```
+```{r}
+# create engineered features
+bike_data$temp2 <- bike_data$temp^2
+bike_data$hum2 <- bike_data$hum^2
+bike_data$hr_factor <- as.factor(bike_data$hr)
+bike_data$working_temp <- bike_data$workingday * bike_data$temp
+bike_data$hum_wind <- bike_data$hum * bike_data$windspeed
+
+model_better <- lm(cnt ~ season + yr + hr_factor + holiday + weekday +
+                     workingday + weathersit +
+                     temp + temp2 +
+                     hum + hum2 +
+                     windspeed + working_temp + hum_wind,
+                   data = bike_data)
+
+summary(model_better)
+```
+```{r}
+model_log <- lm(log(cnt) ~ season + yr + hr_factor + holiday + weekday +
+                  workingday + weathersit +
+                  temp + temp2 +
+                  hum + hum2 +
+                  windspeed + working_temp + hum_wind,
+                data = bike_data)
+summary(model_log)
+```
+```{r}
+model_drop <- lm(cnt ~ season + yr + hr + holiday + weekday + workingday + hum + windspeed,
+                 data = bike_data)
+summary(model_drop)
+
+```
+```{r}
+season_data = subset(bike_data, workingday == 0 & season == 4)
+
+model_winter <- lm(cnt ~ yr + hr + holiday + weekday +
+                     temp + hum + windspeed + weathersit,
+                   data = season_data)
+summary(model_winter)
+
+```
+```{r}
+model_final <- lm(cnt ~ season + yr + hr_factor + holiday + weekday +
+                    workingday + weathersit +
+                    temp + temp2 + hum + hum2 +
+                    windspeed + working_temp + hum_wind,
+                  data = bike_data)
+summary(model_final)
+
+```
+
+
+
+```{r plot-actual-vs-predicted, fig.height=4, fig.width=6}
+library(ggplot2)
+library(gridExtra)
+bike_data$predicted <- predict(model_better)
+bike_data$residuals <- residuals(model_better)
+# Actual vs. Predicted
+ggplot(bike_data, aes(x = predicted, y = cnt)) +
+  geom_point(alpha = 0.3) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
+  labs(
+    title = "Actual vs. Predicted Bike Rentals",
+    x     = "Predicted Count",
+    y     = "Actual Count"
+  ) +
+  theme_minimal()
+
+```
+
+```{r plot-residuals-vs-fitted, fig.height=4, fig.width=6}
+# Residuals vs. Fitted Values
+ggplot(bike_data, aes(x = predicted, y = residuals)) +
+  geom_point(alpha = 0.3) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(
+    title = "Residuals vs. Fitted Values",
+    x     = "Fitted Values",
+    y     = "Residuals"
+  ) +
+  theme_minimal()
+```
+
